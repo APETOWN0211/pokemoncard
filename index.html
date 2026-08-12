@@ -9,39 +9,32 @@
        CSS CUSTOM PROPERTIES
        ======================================== */
     :root {
-      /* Holo Color Presets */
       --color1: rgb(0, 231, 255);
       --color2: rgb(255, 0, 231);
       
-      /* Card 3D Transform */
+      /* Card transform */
       --rotate-x: 0deg;
       --rotate-y: 0deg;
-      --card-scale: 1;
       
-      /* Dynamic Position Variables */
-      --gradient-x: 50%;
-      --gradient-y: 50%;
-      --holo-x: 50%;
-      --holo-y: 50%;
-      --sparkle-x: 50%;
-      --sparkle-y: 50%;
-      --light-x: 50%;
-      --light-y: 50%;
+      /* Layer positions (in pixels, not %) */
+      --holo-x: 0px;
+      --holo-y: 0px;
+      --glare-x: 0px;
+      --glare-y: 0px;
+      --sparkle-x: 0px;
+      --sparkle-y: 0px;
       
-      /* Intensity Variables */
-      --foil-opacity: 0.4;
-      --foil-brightness: 0.9;
-      --foil-contrast: 1.1;
-      --glare-opacity: 0.3;
-      --sparkle-opacity: 0.15;
-      --specular-intensity: 0.5;
+      /* Intensities */
+      --holo-opacity: 0.4;
+      --glare-opacity: 0.25;
+      --sparkle-opacity: 0.1;
       
-      /* Card Dimensions */
+      /* Card size */
       --card-width: min(90vw, 410px);
     }
 
     /* ========================================
-       RESET & BASE
+       RESET
        ======================================== */
     *, *::before, *::after {
       margin: 0;
@@ -49,16 +42,13 @@
       box-sizing: border-box;
     }
 
-    html {
+    html, body {
+      width: 100%;
       height: 100%;
-    }
-
-    body {
-      min-height: 100dvh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: #090909;
       color: #fff;
-      overflow: hidden;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -69,21 +59,22 @@
        ======================================== */
     .app {
       width: 100%;
-      min-height: 100dvh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: env(safe-area-inset-top, 20px) 16px;
+      padding: env(safe-area-inset-top, 0) 16px;
       padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     }
 
     /* ========================================
-       CARD STAGE (Perspective Container)
+       CARD STAGE (Perspective)
        ======================================== */
     .card-stage {
-      perspective: 850px;
+      perspective: 900px;
       perspective-origin: center center;
+      contain: layout;
     }
 
     /* ========================================
@@ -100,7 +91,6 @@
       color: rgba(255, 255, 255, 0.35);
       pointer-events: none;
       z-index: 100;
-      transition: color 0.3s;
     }
 
     .status.active {
@@ -108,33 +98,25 @@
     }
 
     /* ========================================
-       CARD CONTAINER
-       The card has real 3D rotation based on pointer/orientation
+       CARD
+       Only transform changes per frame
        ======================================== */
     .card {
-      --aspect: 2.5 / 3.5;
-      
       width: var(--card-width);
-      aspect-ratio: var(--aspect);
+      aspect-ratio: 2.5 / 3.5;
       position: relative;
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
       
-      /* 3D transformation - THE CARD ACTUALLY ROTATES */
+      /* THE ONLY ANIMATED PROPERTY */
       transform-style: preserve-3d;
-      transform-origin: center center;
-      transform:
-        scale(var(--card-scale))
-        rotateX(var(--rotate-x))
-        rotateY(var(--rotate-y));
+      transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
       
-      /* Dynamic shadow based on rotation */
-      box-shadow:
-        0 35px 60px -15px rgba(0, 0, 0, 0.7),
-        0 50px 80px -20px rgba(0, 0, 0, 0.5);
+      /* Fixed shadow - never animated */
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
       
-      background: #1a1a1a;
       will-change: transform;
+      contain: layout paint style;
     }
 
     /* ========================================
@@ -147,204 +129,135 @@
       height: 100%;
       object-fit: contain;
       background: linear-gradient(145deg, #222 0%, #111 100%);
+      border-radius: 14px;
       z-index: 1;
     }
 
     /* ========================================
-       HOLOGRAM FOIL LAYER (::before)
-       Main rainbow diffraction band
+       HOLO LAYER
+       Large fixed gradient, moved via transform
        ======================================== */
-    .card::before {
-      content: '';
+    .holo {
       position: absolute;
-      inset: -60%;
-      z-index: 10;
+      inset: -80%;
+      width: 260%;
+      height: 260%;
+      left: -80%;
+      top: -80%;
       pointer-events: none;
+      z-index: 10;
       
-      background-image:
+      /* Fixed gradient - NO background-position animation */
+      background:
         linear-gradient(
           115deg,
           transparent 0%,
           transparent 15%,
-          transparent 28%,
-          rgba(255, 255, 255, 0.05) 35%,
-          var(--color1) 42%,
-          rgba(255, 255, 255, 0.5) 48%,
+          transparent 30%,
+          rgba(255, 255, 255, 0.08) 38%,
+          var(--color1) 44%,
+          rgba(255, 255, 255, 0.7) 49%,
           var(--color2) 54%,
-          rgba(255, 255, 255, 0.05) 62%,
+          rgba(255, 255, 255, 0.08) 62%,
           transparent 70%,
           transparent 100%
         );
       
-      background-size: 320% 320%;
-      background-position: var(--gradient-x) var(--gradient-y);
-      
       mix-blend-mode: color-dodge;
-      opacity: var(--foil-opacity);
-      filter: 
-        brightness(var(--foil-brightness))
-        contrast(var(--foil-contrast));
       
-      will-change: background-position, opacity, filter;
+      /* Only transform and opacity animate */
+      transform: translate3d(var(--holo-x), var(--holo-y), 0);
+      opacity: var(--holo-opacity);
+      
+      will-change: transform, opacity;
+      contain: layout paint;
     }
 
     /* ========================================
-       HOLOGRAM TEXTURE LAYER (::after)
-       Multi-layer composition
+       GLARE LAYER
+       Strong diagonal reflection, transform-based
        ======================================== */
-    .card::after {
-      content: '';
+    .glare {
       position: absolute;
-      inset: -60%;
+      inset: -100%;
+      width: 300%;
+      height: 300%;
+      left: -100%;
+      top: -100%;
+      pointer-events: none;
       z-index: 11;
-      pointer-events: none;
       
-      background-image:
-        /* Sparkle patterns */
-        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.9) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 2px),
-        radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.7) 0px, rgba(255, 255, 255, 0.3) 1px, transparent 2px),
-        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.8) 0px, rgba(255, 255, 255, 0.35) 1px, transparent 2px),
-        radial-gradient(circle at 25% 85%, rgba(255, 255, 255, 0.6) 0px, rgba(255, 255, 255, 0.25) 1px, transparent 2px),
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 1) 0px, rgba(255, 255, 255, 0.5) 1.5px, transparent 3px),
-        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 2px),
-        /* External holo texture */
-        url("https://assets.codepen.io/13471/holo.png"),
-        /* Rainbow gradient */
-        linear-gradient(125deg,
-          rgba(255, 0, 80, 0.5) 12%,
-          rgba(252, 164, 0, 0.4) 28%,
-          rgba(255, 255, 0, 0.3) 38%,
-          rgba(0, 255, 138, 0.25) 55%,
-          rgba(0, 207, 255, 0.4) 68%,
-          rgba(204, 76, 250, 0.5) 82%
-        );
-      
-      background-size:
-        100% 100%, 100% 100%, 100% 100%, 100% 100%, 80% 80%, 100% 100%,
-        200% 200%,
-        280% 280%;
-      
-      background-position:
-        var(--sparkle-x) var(--sparkle-y),
-        var(--sparkle-x) var(--sparkle-y),
-        var(--sparkle-x) var(--sparkle-y),
-        var(--sparkle-x) var(--sparkle-y),
-        var(--sparkle-x) var(--sparkle-y),
-        var(--sparkle-x) var(--sparkle-y),
-        var(--holo-x) var(--holo-y),
-        var(--gradient-x) var(--gradient-y);
-      
-      background-blend-mode: overlay, overlay, overlay, overlay, overlay, overlay, color-dodge, normal;
-      mix-blend-mode: color-dodge;
-      opacity: var(--sparkle-opacity);
-      
-      will-change: background-position, opacity;
-    }
-
-    /* ========================================
-       SPECULAR HIGHLIGHT BAND
-       Strong diagonal reflection
-       ======================================== */
-    .holo-specular {
-      position: absolute;
-      inset: -50%;
-      z-index: 12;
-      pointer-events: none;
-      
-      background: 
-        linear-gradient(
-          108deg,
-          transparent 0%,
-          transparent 32%,
-          rgba(255, 255, 255, 0.03) 38%,
-          rgba(255, 255, 255, 0.12) 44%,
-          rgba(255, 255, 255, 0.75) 50%,
-          rgba(255, 255, 255, 0.35) 54%,
-          rgba(255, 255, 255, 0.08) 60%,
-          transparent 68%,
-          transparent 100%
-        ),
-        radial-gradient(
-          ellipse 80% 40% at var(--light-x) var(--light-y),
-          rgba(255, 255, 255, 0.15) 0%,
-          transparent 60%
-        );
-      
-      background-size: 300% 300%, 200% 200%;
-      background-position: var(--light-x) var(--light-y), var(--light-x) var(--light-y);
-      
-      mix-blend-mode: screen;
-      opacity: var(--specular-intensity);
-      
-      will-change: background-position, opacity;
-    }
-
-    /* ========================================
-       GLARE BAND
-       Secondary diagonal reflection
-       ======================================== */
-    .holo-glare {
-      position: absolute;
-      inset: -50%;
-      z-index: 13;
-      pointer-events: none;
-      
+      /* Fixed diagonal glare */
       background: linear-gradient(
-        72deg,
+        108deg,
         transparent 0%,
-        transparent 25%,
-        rgba(255, 255, 255, 0.06) 32%,
-        rgba(255, 255, 255, 0.25) 38%,
-        rgba(255, 255, 255, 0.08) 44%,
-        transparent 52%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.12) 44%,
+        rgba(255, 255, 255, 0.85) 50%,
+        rgba(255, 255, 255, 0.2) 54%,
+        transparent 60%,
         transparent 100%
       );
       
-      background-size: 280% 280%;
-      background-position: var(--light-x) var(--light-y);
+      mix-blend-mode: screen;
       
-      mix-blend-mode: color-dodge;
+      /* Only transform and opacity animate */
+      transform: translate3d(var(--glare-x), var(--glare-y), 0);
       opacity: var(--glare-opacity);
       
-      will-change: background-position, opacity;
+      will-change: transform, opacity;
+      contain: layout paint;
     }
 
     /* ========================================
-       MICRO GRAIN TEXTURE
+       SPARKLE LAYER
+       CSS-based static sparkles, transform-based
        ======================================== */
-    .holo-grain {
+    .sparkle {
       position: absolute;
-      inset: 0;
-      z-index: 14;
+      inset: -50%;
+      width: 200%;
+      height: 200%;
+      left: -50%;
+      top: -50%;
       pointer-events: none;
-      opacity: 0.06;
+      z-index: 12;
       
+      /* CSS-based sparkle pattern - NO GIF */
       background:
-        repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(255, 255, 255, 0.1) 1px, rgba(255, 255, 255, 0.1) 2px),
-        repeating-linear-gradient(90deg, transparent 0px, transparent 1px, rgba(255, 255, 255, 0.08) 1px, rgba(255, 255, 255, 0.08) 2px),
-        repeating-linear-gradient(45deg, transparent 0px, transparent 3px, rgba(255, 255, 255, 0.03) 3px, rgba(255, 255, 255, 0.03) 4px);
+        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.8) 0.5px, transparent 1px),
+        radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.6) 0.5px, transparent 1px),
+        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+        radial-gradient(circle at 25% 85%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.9) 0.5px, transparent 1px),
+        radial-gradient(circle at 35% 65%, rgba(255, 255, 255, 0.6) 0.5px, transparent 1px),
+        radial-gradient(circle at 65% 35%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
+        radial-gradient(circle at 20% 60%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px);
+      background-size: 24px 24px;
       
-      mix-blend-mode: overlay;
+      mix-blend-mode: screen;
+      
+      /* Only transform and opacity animate */
+      transform: translate3d(var(--sparkle-x), var(--sparkle-y), 0);
+      opacity: var(--sparkle-opacity);
+      
+      will-change: transform, opacity;
+      contain: layout paint;
     }
 
     /* ========================================
        INACTIVE STATE
        ======================================== */
-    .card:not(.motion-active)::before {
+    .card:not(.motion-active) .holo {
       opacity: 0.08;
-      filter: brightness(0.7) contrast(0.8);
     }
 
-    .card:not(.motion-active)::after {
+    .card:not(.motion-active) .glare {
       opacity: 0.05;
     }
 
-    .card:not(.motion-active) .holo-specular {
-      opacity: 0.1;
-    }
-
-    .card:not(.motion-active) .holo-glare {
-      opacity: 0.05;
+    .card:not(.motion-active) .sparkle {
+      opacity: 0.03;
     }
 
     /* ========================================
@@ -393,7 +306,7 @@
       gap: 12px;
       padding: 20px 16px;
       padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(to top, rgba(9, 9, 9, 0.95) 0%, rgba(9, 9, 9, 0.8) 70%, transparent 100%);
+      background: linear-gradient(to top, rgba(9, 9, 9, 0.95) 0%, transparent 100%);
       z-index: 100;
     }
 
@@ -403,19 +316,12 @@
       padding: 15px 24px;
       font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.5px;
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(12px);
-    }
-
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.25);
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn:active {
@@ -425,11 +331,6 @@
     .btn-primary {
       background: rgba(0, 200, 255, 0.15);
       border-color: rgba(0, 200, 255, 0.3);
-    }
-
-    .btn-primary:hover {
-      background: rgba(0, 200, 255, 0.25);
-      border-color: rgba(0, 200, 255, 0.45);
     }
 
     .btn-row {
@@ -455,7 +356,7 @@
     }
 
     /* ========================================
-       DEBUG INFO
+       DEBUG
        ======================================== */
     .debug {
       position: fixed;
@@ -519,9 +420,9 @@
     <div class="card-stage">
       <div class="card motion-active" id="card">
         <img class="card__image" id="card-image" alt="Card">
-        <div class="holo-specular"></div>
-        <div class="holo-glare"></div>
-        <div class="holo-grain"></div>
+        <div class="holo"></div>
+        <div class="glare"></div>
+        <div class="sparkle"></div>
       </div>
     </div>
 
@@ -539,63 +440,51 @@
     <div class="debug" id="debug">
       x: <span id="d-x">0</span><br>
       y: <span id="d-y">0</span><br>
-      rotateX: <span id="d-rx">0</span><br>
-      rotateY: <span id="d-ry">0</span><br>
-      intensity: <span id="d-intensity">0</span>
+      rx: <span id="d-rx">0</span><br>
+      ry: <span id="d-ry">0</span>
     </div>
   </div>
 
   <script>
     /**
      * ========================================
-     * HOLOGRAPHIC CARD VIEWER
+     * PERFORMANCE-OPTIMIZED HOLOGRAPHIC VIEWER
      * ========================================
      * 
-     * The card rotates in 3D based on normalized coordinates.
-     * Hologram effects move independently but based on same input.
+     * Only transform + opacity change per frame
+     * No background-position, no filters, no box-shadow animation
      */
 
     // ========================================
-    // SETTINGS - Easy tuning
+    // SETTINGS
     // ========================================
     
     const SETTINGS = {
       // Card 3D Rotation
-      maxRotateX: 14,        // degrees (up/down)
-      maxRotateY: 14,        // degrees (left/right)
-      perspective: 850,      // px
+      maxRotateX: 14,
+      maxRotateY: 14,
       
-      // Card Scale Effect
-      enableScale: true,
-      maxScale: 1.02,
+      // Layer movement (pixels)
+      holoRange: 180,
+      glareRange: 220,
+      sparkleRange: 100,
       
-      // Sensor Range (±degrees for full -1 to 1)
-      sensorRange: 30,
-      
-      // Hologram Travel Distances (%)
-      gradientTravel: 80,
-      holoTravel: 55,
-      sparkleTravel: 25,
-      lightTravel: 100,
-      
-      // Hologram Movement Direction (relative to card rotation)
-      // Negative = opposite direction to card
-      gradientDirX: -1,
-      gradientDirY: -1,
-      holoDirX: -0.6,
-      holoDirY: -0.6,
+      // Movement direction (relative to card)
+      holoDirX: -1,
+      holoDirY: -1,
+      glareDirX: -1,
+      glareDirY: -1,
       sparkleDirX: 0.3,
       sparkleDirY: 0.3,
-      lightDirX: -1,
-      lightDirY: -1,
       
-      // Smoothing (higher = faster)
-      cardSmoothing: 0.085,
-      foilSmoothing: 0.10,
-      sparkleSmoothing: 0.05,
+      // Smoothing
+      smoothing: 0.1,
       
-      // Dead Zone (ignore small movements)
-      deadZone: 0.025,
+      // Dead zone
+      deadZone: 0.02,
+      
+      // Sensor range (±degrees)
+      sensorRange: 30,
     };
 
     // ========================================
@@ -604,17 +493,10 @@
     
     let centerGamma = 0;
     let centerBeta = 0;
-    
     let targetX = 0;
     let targetY = 0;
-    
-    // Smoothed values
     let currentX = 0;
     let currentY = 0;
-    let foilX = 0;
-    let foilY = 0;
-    let sparkX = 0;
-    let sparkY = 0;
     
     let isMotionActive = false;
     let isRecalibrated = false;
@@ -623,39 +505,33 @@
     const presets = ['rainbow', 'gold', 'silver', 'galaxy', 'aurora', 'default'];
     let currentPresetIndex = 5;
     
-    // DOM
+    // Performance tracking
+    let lastRenderX = 0;
+    let lastRenderY = 0;
+    const EPSILON = 0.002;
+    let needsUpdate = true;
+    
+    // DOM cache
     let card, cardImage, statusEl, instructionsEl;
     let uploadBtn, motionBtn, recalibrateBtn, presetBtn;
-    let debugEl, dX, dY, dRx, dRy, dIntensity;
+    let debugEl, dX, dY, dRx, dRy;
 
     // ========================================
     // UTILITIES
     // ========================================
     
-    function clamp(value, min, max) {
-      return Math.min(Math.max(value, min), max);
+    function clamp(v, min, max) {
+      return Math.min(Math.max(v, min), max);
     }
     
-    function applyDeadZone(value, zone = SETTINGS.deadZone) {
-      if (Math.abs(value) < zone) return 0;
-      const sign = value > 0 ? 1 : -1;
-      const adjusted = (Math.abs(value) - zone) / (1 - zone);
-      return sign * clamp(adjusted, 0, 1);
-    }
-    
-    function smoothstep(edge0, edge1, x) {
-      const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
-      return t * t * (3 - 2 * t);
-    }
-    
-    function calculateIntensity(x, y) {
-      const diagonal = x * 0.7 + y * 0.3;
-      const highlight = smoothstep(-0.8, -0.2, diagonal) * (1 - smoothstep(0.2, 0.8, diagonal));
-      return 0.3 + highlight * 0.7;
+    function applyDeadZone(v, zone = SETTINGS.deadZone) {
+      if (Math.abs(v) < zone) return 0;
+      const sign = v > 0 ? 1 : -1;
+      return sign * clamp((Math.abs(v) - zone) / (1 - zone), 0, 1);
     }
 
     // ========================================
-    // INITIALIZATION
+    // INIT
     // ========================================
     
     function init() {
@@ -673,12 +549,8 @@
       dY = document.getElementById('d-y');
       dRx = document.getElementById('d-rx');
       dRy = document.getElementById('d-ry');
-      dIntensity = document.getElementById('d-intensity');
       
-      // Set perspective on stage
-      document.querySelector('.card-stage').style.perspective = `${SETTINGS.perspective}px`;
-      
-      // Events
+      // Events - NO transition during motion
       document.getElementById('file-input').addEventListener('change', handleFileSelect);
       uploadBtn.addEventListener('click', () => document.getElementById('file-input').click());
       motionBtn.addEventListener('click', handleMotionButton);
@@ -686,20 +558,18 @@
       presetBtn.addEventListener('click', cyclePreset);
       
       // Pointer tracking
-      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointermove', handlePointerMove, { passive: true });
       
-      // Start animation
+      // Single animation loop
       requestAnimationFrame(animate);
       
       // Restore saved image
-      const savedImage = localStorage.getItem('hologram-card-image');
-      if (savedImage) {
-        loadImage(savedImage);
-      }
+      const saved = localStorage.getItem('hologram-card-image');
+      if (saved) loadImage(saved);
       
       card.classList.remove('motion-active');
       
-      console.log('Initialized - Card will rotate based on pointer/orientation');
+      console.log('Optimized viewer initialized');
     }
 
     // ========================================
@@ -711,9 +581,9 @@
       if (!file) return;
       
       const reader = new FileReader();
-      reader.onload = (event) => {
-        loadImage(event.target.result);
-        localStorage.setItem('hologram-card-image', event.target.result);
+      reader.onload = (ev) => {
+        loadImage(ev.target.result);
+        localStorage.setItem('hologram-card-image', ev.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -725,7 +595,7 @@
       statusEl.textContent = '모션 활성';
       statusEl.classList.add('active');
       
-      if (isMobileDevice() && typeof DeviceOrientationEvent !== 'undefined') {
+      if (isMobile() && typeof DeviceOrientationEvent !== 'undefined') {
         requestMotionPermission();
       } else {
         startMotion();
@@ -733,11 +603,11 @@
     }
 
     // ========================================
-    // MOTION HANDLING
+    // MOTION
     // ========================================
     
     function handleMotionButton() {
-      if (isMobileDevice() && typeof DeviceOrientationEvent !== 'undefined') {
+      if (isMobile() && typeof DeviceOrientationEvent !== 'undefined') {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
           requestMotionPermission();
         } else {
@@ -750,22 +620,20 @@
     
     async function requestMotionPermission() {
       try {
-        const permission = await DeviceOrientationEvent.requestPermission();
-        if (permission === 'granted') {
-          startMotion();
-        } else {
+        const perm = await DeviceOrientationEvent.requestPermission();
+        if (perm === 'granted') startMotion();
+        else {
           statusEl.textContent = '권한 거부됨';
           alert('모션 센서 권한이 필요합니다.');
         }
-      } catch (error) {
-        console.error('Permission error:', error);
+      } catch (err) {
         startMotion();
       }
     }
     
     function startMotion() {
-      if (isMobileDevice()) {
-        window.addEventListener('deviceorientation', handleOrientation, true);
+      if (isMobile()) {
+        window.addEventListener('deviceorientation', handleOrientation, { passive: true });
       }
       
       isMotionActive = true;
@@ -776,103 +644,85 @@
       motionBtn.disabled = true;
       recalibrateBtn.style.display = 'block';
       
-      console.log('Motion tracking started');
+      console.log('Motion started');
     }
     
-    function handleOrientation(event) {
-      const gamma = event.gamma || 0;
-      const beta = event.beta || 0;
+    // ONLY update target values - NO DOM changes here
+    function handleOrientation(e) {
+      const gamma = e.gamma || 0;
+      const beta = e.beta || 0;
       
       if (!isRecalibrated) {
         centerGamma = gamma;
         centerBeta = beta;
         isRecalibrated = true;
-        console.log(`Calibrated: gamma=${centerGamma.toFixed(1)}, beta=${centerBeta.toFixed(1)}`);
       }
       
       const relGamma = gamma - centerGamma;
       const relBeta = beta - centerBeta;
       
-      targetX = applyDeadZone(relGamma / SETTINGS.sensorRange);
-      targetY = applyDeadZone(relBeta / SETTINGS.sensorRange);
+      targetX = clamp(applyDeadZone(relGamma / SETTINGS.sensorRange), -1, 1);
+      targetY = clamp(applyDeadZone(relBeta / SETTINGS.sensorRange), -1, 1);
       
-      targetX = clamp(targetX, -1, 1);
-      targetY = clamp(targetY, -1, 1);
-      
-      updateDebug(gamma, beta);
+      needsUpdate = true;
     }
     
-    function handlePointerMove(event) {
+    function handlePointerMove(e) {
       if (!isRecalibrated) {
         isRecalibrated = true;
       }
       
-      // Normalized coordinates: -1 to 1
-      const x = ((event.clientX / window.innerWidth) - 0.5) * 2;
-      const y = ((event.clientY / window.innerHeight) - 0.5) * 2;
+      const x = ((e.clientX / window.innerWidth) - 0.5) * 2;
+      const y = ((e.clientY / window.innerHeight) - 0.5) * 2;
       
-      targetX = applyDeadZone(x);
-      targetY = applyDeadZone(y);
+      targetX = clamp(applyDeadZone(x), -1, 1);
+      targetY = clamp(applyDeadZone(y), -1, 1);
       
-      updateDebug(0, 0);
-    }
-    
-    function updateDebug(gamma, beta) {
-      if (debugEl.style.display !== 'none') {
-        dX.textContent = targetX.toFixed(2);
-        dY.textContent = targetY.toFixed(2);
-      }
+      needsUpdate = true;
     }
     
     function resetCenter() {
       if (!isMotionActive) return;
-      
       isRecalibrated = false;
       centerGamma = 0;
       centerBeta = 0;
       targetX = 0;
       targetY = 0;
-      
       statusEl.textContent = '재보정 완료';
-      setTimeout(() => {
-        statusEl.textContent = '모션 활성';
-      }, 1000);
+      setTimeout(() => { statusEl.textContent = '모션 활성'; }, 1000);
     }
     
     function cyclePreset() {
       currentPresetIndex = (currentPresetIndex + 1) % presets.length;
       const preset = presets[currentPresetIndex];
-      
-      if (preset === 'default') {
-        card.removeAttribute('data-preset');
-      } else {
-        card.setAttribute('data-preset', preset);
-      }
-      
+      if (preset === 'default') card.removeAttribute('data-preset');
+      else card.setAttribute('data-preset', preset);
       statusEl.textContent = `프리셋: ${preset}`;
-      setTimeout(() => {
-        statusEl.textContent = '모션 활성';
-      }, 1000);
+      setTimeout(() => { statusEl.textContent = '모션 활성'; }, 1000);
     }
 
     // ========================================
-    // ANIMATION LOOP
+    // SINGLE ANIMATION LOOP
+    // Only transforms + opacity change
     // ========================================
     
     function animate() {
-      // Smooth interpolation with different speeds
-      currentX += (targetX - currentX) * SETTINGS.cardSmoothing;
-      currentY += (targetY - currentY) * SETTINGS.cardSmoothing;
+      // Smooth interpolation
+      currentX += (targetX - currentX) * SETTINGS.smoothing;
+      currentY += (targetY - currentY) * SETTINGS.smoothing;
       
-      foilX += (targetX - foilX) * SETTINGS.foilSmoothing;
-      foilY += (targetY - foilY) * SETTINGS.foilSmoothing;
+      // Skip if no significant change
+      if (Math.abs(currentX - lastRenderX) < EPSILON && 
+          Math.abs(currentY - lastRenderY) < EPSILON) {
+        requestAnimationFrame(animate);
+        return;
+      }
       
-      sparkX += (targetX - sparkX) * SETTINGS.sparkleSmoothing;
-      sparkY += (targetY - sparkY) * SETTINGS.sparkleSmoothing;
+      lastRenderX = currentX;
+      lastRenderY = currentY;
       
+      // Update DOM - ONLY transform + opacity
       updateCard();
-      updateHologram();
-      updateDebugDisplay();
       
       requestAnimationFrame(animate);
     }
@@ -880,88 +730,64 @@
     function updateCard() {
       const root = document.documentElement;
       
-      // Card 3D Rotation
+      // Card rotation
       const rotateY = currentX * SETTINGS.maxRotateY;
       const rotateX = currentY * -SETTINGS.maxRotateX;
       
-      // Subtle scale based on movement magnitude
-      let scale = 1;
-      if (SETTINGS.enableScale) {
-        const magnitude = Math.sqrt(currentX * currentX + currentY * currentY);
-        scale = 1 + magnitude * (SETTINGS.maxScale - 1);
-      }
+      // Layer positions
+      const holoX = currentX * SETTINGS.holoDirX * SETTINGS.holoRange;
+      const holoY = currentY * SETTINGS.holoDirY * SETTINGS.holoRange;
+      
+      const glareX = currentX * SETTINGS.glareDirX * SETTINGS.glareRange;
+      const glareY = currentY * SETTINGS.glareDirY * SETTINGS.glareRange;
+      
+      const sparkleX = currentX * SETTINGS.sparkleDirX * SETTINGS.sparkleRange;
+      const sparkleY = currentY * SETTINGS.sparkleDirY * SETTINGS.sparkleRange;
+      
+      // Calculate intensity for opacity
+      const intensity = Math.sqrt(currentX * currentX + currentY * currentY);
+      const holoOpacity = 0.2 + intensity * 0.4;
+      const glareOpacity = 0.1 + intensity * 0.35;
+      const sparkleOpacity = 0.05 + intensity * 0.2;
+      
+      // Apply ONLY these CSS properties per frame:
+      // 1. --rotate-x, --rotate-y (transform)
+      // 2. --holo-x, --holo-y (transform)
+      // 3. --glare-x, --glare-y (transform)
+      // 4. --sparkle-x, --sparkle-y (transform)
+      // 5. --holo-opacity, --glare-opacity, --sparkle-opacity (opacity)
       
       root.style.setProperty('--rotate-x', `${rotateX}deg`);
       root.style.setProperty('--rotate-y', `${rotateY}deg`);
-      root.style.setProperty('--card-scale', scale.toFixed(3));
+      root.style.setProperty('--holo-x', `${holoX}px`);
+      root.style.setProperty('--holo-y', `${holoY}px`);
+      root.style.setProperty('--glare-x', `${glareX}px`);
+      root.style.setProperty('--glare-y', `${glareY}px`);
+      root.style.setProperty('--sparkle-x', `${sparkleX}px`);
+      root.style.setProperty('--sparkle-y', `${sparkleY}px`);
+      root.style.setProperty('--holo-opacity', holoOpacity.toFixed(2));
+      root.style.setProperty('--glare-opacity', glareOpacity.toFixed(2));
+      root.style.setProperty('--sparkle-opacity', sparkleOpacity.toFixed(2));
       
       // Debug
       if (debugEl.style.display !== 'none') {
+        dX.textContent = currentX.toFixed(2);
+        dY.textContent = currentY.toFixed(2);
         dRx.textContent = `${rotateX.toFixed(1)}deg`;
         dRy.textContent = `${rotateY.toFixed(1)}deg`;
       }
     }
-    
-    function updateHologram() {
-      const root = document.documentElement;
-      
-      // Gradient position (opposite to card direction)
-      const gradientX = 50 + foilX * SETTINGS.gradientDirX * SETTINGS.gradientTravel;
-      const gradientY = 50 + foilY * SETTINGS.gradientDirY * SETTINGS.gradientTravel;
-      
-      // Hologram texture position
-      const holoX = 50 + foilX * SETTINGS.holoDirX * SETTINGS.holoTravel;
-      const holoY = 50 + foilY * SETTINGS.holoDirY * SETTINGS.holoTravel;
-      
-      // Sparkle position (same direction as pointer)
-      const sparkleX = 50 + sparkX * SETTINGS.sparkleDirX * SETTINGS.sparkleTravel;
-      const sparkleY = 50 + sparkY * SETTINGS.sparkleDirY * SETTINGS.sparkleTravel;
-      
-      // Light/specular position (opposite to card direction)
-      const lightX = 50 + foilX * SETTINGS.lightDirX * SETTINGS.lightTravel;
-      const lightY = 50 + foilY * SETTINGS.lightDirY * SETTINGS.lightTravel;
-      
-      root.style.setProperty('--gradient-x', `${gradientX}%`);
-      root.style.setProperty('--gradient-y', `${gradientY}%`);
-      root.style.setProperty('--holo-x', `${holoX}%`);
-      root.style.setProperty('--holo-y', `${holoY}%`);
-      root.style.setProperty('--sparkle-x', `${sparkleX}%`);
-      root.style.setProperty('--sparkle-y', `${sparkleY}%`);
-      root.style.setProperty('--light-x', `${lightX}%`);
-      root.style.setProperty('--light-y', `${lightY}%`);
-      
-      // Intensity-based effects
-      const intensity = calculateIntensity(foilX, foilY);
-      
-      root.style.setProperty('--foil-opacity', (0.25 + intensity * 0.45).toFixed(2));
-      root.style.setProperty('--foil-brightness', (0.75 + intensity * 0.45).toFixed(2));
-      root.style.setProperty('--foil-contrast', (0.9 + intensity * 0.4).toFixed(2));
-      root.style.setProperty('--sparkle-opacity', (0.08 + intensity * 0.4).toFixed(2));
-      root.style.setProperty('--specular-intensity', (0.2 + intensity * 0.75).toFixed(2));
-      root.style.setProperty('--glare-opacity', (0.15 + intensity * 0.45).toFixed(2));
-      
-      if (debugEl.style.display !== 'none') {
-        dIntensity.textContent = intensity.toFixed(2);
-      }
-    }
-    
-    function updateDebugDisplay() {
-      if (debugEl.style.display !== 'none') {
-        dX.textContent = currentX.toFixed(2);
-        dY.textContent = currentY.toFixed(2);
-      }
-    }
 
     // ========================================
-    // DEVICE DETECTION
+    // UTILITIES
     // ========================================
     
-    function isMobileDevice() {
+    function isMobile() {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
     // ========================================
-    // DEBUG TOGGLE (tap card 5x)
+    // DEBUG TOGGLE
     // ========================================
     
     let tapCount = 0;
@@ -969,10 +795,8 @@
     
     card?.addEventListener('click', () => {
       if (!isImageLoaded) return;
-      
       tapCount++;
       clearTimeout(tapTimer);
-      
       if (tapCount >= 5) {
         debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
         tapCount = 0;
@@ -985,7 +809,7 @@
     // START
     // ========================================
     
-    document.addEventListener('DOMContentLoaded', init);
+    requestAnimationFrame(() => requestAnimationFrame(init));
   </script>
 </body>
 </html>
