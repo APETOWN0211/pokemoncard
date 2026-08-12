@@ -13,12 +13,12 @@
       --color1: rgb(0, 231, 255);
       --color2: rgb(255, 0, 231);
       
-      /* Dynamic Position Variables */
-      --card-rx: 0deg;
-      --card-ry: 0deg;
-      --card-x: 0px;
-      --card-y: 0px;
+      /* Card 3D Transform */
+      --rotate-x: 0deg;
+      --rotate-y: 0deg;
+      --card-scale: 1;
       
+      /* Dynamic Position Variables */
       --gradient-x: 50%;
       --gradient-y: 50%;
       --holo-x: 50%;
@@ -36,10 +36,7 @@
       --sparkle-opacity: 0.15;
       --specular-intensity: 0.5;
       
-      /* Edge Glow */
-      --edge-glow: 0;
-      
-      /* Card Dimensions - iPhone focused */
+      /* Card Dimensions */
       --card-width: min(90vw, 410px);
     }
 
@@ -79,7 +76,14 @@
       justify-content: center;
       padding: env(safe-area-inset-top, 20px) 16px;
       padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-      padding-top: max(env(safe-area-inset-top, 0px), 20px);
+    }
+
+    /* ========================================
+       CARD STAGE (Perspective Container)
+       ======================================== */
+    .card-stage {
+      perspective: 850px;
+      perspective-origin: center center;
     }
 
     /* ========================================
@@ -105,7 +109,7 @@
 
     /* ========================================
        CARD CONTAINER
-       The card itself has subtle 3D movement
+       The card has real 3D rotation based on pointer/orientation
        ======================================== */
     .card {
       --aspect: 2.5 / 3.5;
@@ -116,24 +120,21 @@
       border-radius: 14px;
       overflow: hidden;
       
-      /* Subtle 3D transformation based on sensor */
-      transform: 
-        perspective(1100px)
-        translate3d(var(--card-x), var(--card-y), 0)
-        rotateX(var(--card-rx))
-        rotateY(var(--card-ry));
+      /* 3D transformation - THE CARD ACTUALLY ROTATES */
       transform-style: preserve-3d;
+      transform-origin: center center;
+      transform:
+        scale(var(--card-scale))
+        rotateX(var(--rotate-x))
+        rotateY(var(--rotate-y));
       
-      /* Dynamic shadow based on tilt */
+      /* Dynamic shadow based on rotation */
       box-shadow:
-        calc(var(--card-x) * -1.2) calc(var(--card-y) * -1.2) 20px -5px rgba(0, 0, 0, 0.6),
-        calc(var(--card-x) * 0.5) calc(var(--card-y) * 0.5) 30px -10px rgba(var(--color1), calc(0.08 * var(--edge-glow))),
-        calc(var(--card-x) * -0.5) calc(var(--card-y) * -0.5) 30px -10px rgba(var(--color2), calc(0.08 * var(--edge-glow))),
         0 35px 60px -15px rgba(0, 0, 0, 0.7),
         0 50px 80px -20px rgba(0, 0, 0, 0.5);
       
       background: #1a1a1a;
-      will-change: transform, box-shadow;
+      will-change: transform;
     }
 
     /* ========================================
@@ -160,7 +161,6 @@
       z-index: 10;
       pointer-events: none;
       
-      /* Large sweeping rainbow gradient - mostly transparent */
       background-image:
         linear-gradient(
           115deg,
@@ -190,10 +190,7 @@
 
     /* ========================================
        HOLOGRAM TEXTURE LAYER (::after)
-       Multi-layer composition:
-       - External holo texture
-       - Rainbow gradient overlay
-       - Sparkle pattern
+       Multi-layer composition
        ======================================== */
     .card::after {
       content: '';
@@ -202,50 +199,18 @@
       z-index: 11;
       pointer-events: none;
       
-      /* Multiple backgrounds with different sizes/positions */
       background-image:
-        /* Sparkle pattern (CSS generated) */
-        radial-gradient(
-          circle at 15% 25%,
-          rgba(255, 255, 255, 0.9) 0px,
-          rgba(255, 255, 255, 0.4) 1px,
-          transparent 2px
-        ),
-        radial-gradient(
-          circle at 85% 15%,
-          rgba(255, 255, 255, 0.7) 0px,
-          rgba(255, 255, 255, 0.3) 1px,
-          transparent 2px
-        ),
-        radial-gradient(
-          circle at 75% 75%,
-          rgba(255, 255, 255, 0.8) 0px,
-          rgba(255, 255, 255, 0.35) 1px,
-          transparent 2px
-        ),
-        radial-gradient(
-          circle at 25% 85%,
-          rgba(255, 255, 255, 0.6) 0px,
-          rgba(255, 255, 255, 0.25) 1px,
-          transparent 2px
-        ),
-        radial-gradient(
-          circle at 50% 50%,
-          rgba(255, 255, 255, 1) 0px,
-          rgba(255, 255, 255, 0.5) 1.5px,
-          transparent 3px
-        ),
-        radial-gradient(
-          circle at 35% 35%,
-          rgba(255, 255, 255, 0.85) 0px,
-          rgba(255, 255, 255, 0.4) 1px,
-          transparent 2px
-        ),
+        /* Sparkle patterns */
+        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.9) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 2px),
+        radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.7) 0px, rgba(255, 255, 255, 0.3) 1px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.8) 0px, rgba(255, 255, 255, 0.35) 1px, transparent 2px),
+        radial-gradient(circle at 25% 85%, rgba(255, 255, 255, 0.6) 0px, rgba(255, 255, 255, 0.25) 1px, transparent 2px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 1) 0px, rgba(255, 255, 255, 0.5) 1.5px, transparent 3px),
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 2px),
         /* External holo texture */
         url("https://assets.codepen.io/13471/holo.png"),
         /* Rainbow gradient */
-        linear-gradient(
-          125deg,
+        linear-gradient(125deg,
           rgba(255, 0, 80, 0.5) 12%,
           rgba(252, 164, 0, 0.4) 28%,
           rgba(255, 255, 0, 0.3) 38%,
@@ -254,18 +219,11 @@
           rgba(204, 76, 250, 0.5) 82%
         );
       
-      /* Different sizes for parallax effect */
       background-size:
-        100% 100%,
-        100% 100%,
-        100% 100%,
-        100% 100%,
-        80% 80%,
-        100% 100%,
+        100% 100%, 100% 100%, 100% 100%, 100% 100%, 80% 80%, 100% 100%,
         200% 200%,
         280% 280%;
       
-      /* Different positions for different movement speeds */
       background-position:
         var(--sparkle-x) var(--sparkle-y),
         var(--sparkle-x) var(--sparkle-y),
@@ -276,16 +234,7 @@
         var(--holo-x) var(--holo-y),
         var(--gradient-x) var(--gradient-y);
       
-      background-blend-mode: 
-        overlay,
-        overlay,
-        overlay,
-        overlay,
-        overlay,
-        overlay,
-        color-dodge,
-        normal;
-      
+      background-blend-mode: overlay, overlay, overlay, overlay, overlay, overlay, color-dodge, normal;
       mix-blend-mode: color-dodge;
       opacity: var(--sparkle-opacity);
       
@@ -303,7 +252,6 @@
       pointer-events: none;
       
       background: 
-        /* Main specular band */
         linear-gradient(
           108deg,
           transparent 0%,
@@ -316,7 +264,6 @@
           transparent 68%,
           transparent 100%
         ),
-        /* Secondary soft glow */
         radial-gradient(
           ellipse 80% 40% at var(--light-x) var(--light-y),
           rgba(255, 255, 255, 0.15) 0%,
@@ -364,7 +311,6 @@
 
     /* ========================================
        MICRO GRAIN TEXTURE
-       Very subtle surface texture
        ======================================== */
     .holo-grain {
       position: absolute;
@@ -374,34 +320,15 @@
       opacity: 0.06;
       
       background:
-        repeating-linear-gradient(
-          0deg,
-          transparent 0px,
-          transparent 1px,
-          rgba(255, 255, 255, 0.1) 1px,
-          rgba(255, 255, 255, 0.1) 2px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          transparent 0px,
-          transparent 1px,
-          rgba(255, 255, 255, 0.08) 1px,
-          rgba(255, 255, 255, 0.08) 2px
-        ),
-        repeating-linear-gradient(
-          45deg,
-          transparent 0px,
-          transparent 3px,
-          rgba(255, 255, 255, 0.03) 3px,
-          rgba(255, 255, 255, 0.03) 4px
-        );
+        repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(255, 255, 255, 0.1) 1px, rgba(255, 255, 255, 0.1) 2px),
+        repeating-linear-gradient(90deg, transparent 0px, transparent 1px, rgba(255, 255, 255, 0.08) 1px, rgba(255, 255, 255, 0.08) 2px),
+        repeating-linear-gradient(45deg, transparent 0px, transparent 3px, rgba(255, 255, 255, 0.03) 3px, rgba(255, 255, 255, 0.03) 4px);
       
       mix-blend-mode: overlay;
     }
 
     /* ========================================
        INACTIVE STATE
-       Reduced holo effect when motion not active
        ======================================== */
     .card:not(.motion-active)::before {
       opacity: 0.08;
@@ -484,7 +411,6 @@
       cursor: pointer;
       transition: all 0.2s ease;
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
     }
 
     .btn:hover {
@@ -524,7 +450,6 @@
       cursor: not-allowed;
     }
 
-    /* Hidden file input */
     #file-input {
       display: none;
     }
@@ -575,19 +500,6 @@
       --color1: rgb(0, 255, 127);
       --color2: rgb(0, 191, 255);
     }
-
-    /* ========================================
-       LOADING STATE
-       ======================================== */
-    .card.loading::before,
-    .card.loading::after {
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.1; }
-      50% { opacity: 0.2; }
-    }
   </style>
 </head>
 <body>
@@ -604,11 +516,13 @@
       <p>포켓몬, 스포츠, 포토카드</p>
     </div>
 
-    <div class="card motion-active" id="card">
-      <img class="card__image" id="card-image" alt="Card">
-      <div class="holo-specular"></div>
-      <div class="holo-glare"></div>
-      <div class="holo-grain"></div>
+    <div class="card-stage">
+      <div class="card motion-active" id="card">
+        <img class="card__image" id="card-image" alt="Card">
+        <div class="holo-specular"></div>
+        <div class="holo-glare"></div>
+        <div class="holo-grain"></div>
+      </div>
     </div>
 
     <input type="file" id="file-input" accept="image/*">
@@ -623,10 +537,10 @@
     </div>
 
     <div class="debug" id="debug">
-      gamma: <span id="d-gamma">0</span><br>
-      beta: <span id="d-beta">0</span><br>
-      target: <span id="d-target">0, 0</span><br>
-      current: <span id="d-current">0, 0</span><br>
+      x: <span id="d-x">0</span><br>
+      y: <span id="d-y">0</span><br>
+      rotateX: <span id="d-rx">0</span><br>
+      rotateY: <span id="d-ry">0</span><br>
       intensity: <span id="d-intensity">0</span>
     </div>
   </div>
@@ -637,81 +551,82 @@
      * HOLOGRAPHIC CARD VIEWER
      * ========================================
      * 
-     * Settings for easy tuning
+     * The card rotates in 3D based on normalized coordinates.
+     * Hologram effects move independently but based on same input.
      */
+
+    // ========================================
+    // SETTINGS - Easy tuning
+    // ========================================
+    
     const SETTINGS = {
-      // Sensor range (±degrees for full effect)
+      // Card 3D Rotation
+      maxRotateX: 14,        // degrees (up/down)
+      maxRotateY: 14,        // degrees (left/right)
+      perspective: 850,      // px
+      
+      // Card Scale Effect
+      enableScale: true,
+      maxScale: 1.02,
+      
+      // Sensor Range (±degrees for full -1 to 1)
       sensorRange: 30,
       
-      // Card movement
-      cardRotateX: 5,        // degrees
-      cardRotateY: 5,         // degrees
-      cardTranslate: 3,      // pixels
+      // Hologram Travel Distances (%)
+      gradientTravel: 80,
+      holoTravel: 55,
+      sparkleTravel: 25,
+      lightTravel: 100,
       
-      // Layer travel distances (%)
-      gradientTravel: 75,
-      holoTravel: 45,
-      sparkleTravel: 20,
-      lightTravel: 95,
+      // Hologram Movement Direction (relative to card rotation)
+      // Negative = opposite direction to card
+      gradientDirX: -1,
+      gradientDirY: -1,
+      holoDirX: -0.6,
+      holoDirY: -0.6,
+      sparkleDirX: 0.3,
+      sparkleDirY: 0.3,
+      lightDirX: -1,
+      lightDirY: -1,
       
-      // Smoothing factors (higher = faster response)
-      cardSmoothing: 0.065,
+      // Smoothing (higher = faster)
+      cardSmoothing: 0.085,
       foilSmoothing: 0.10,
-      sparkleSmoothing: 0.045,
+      sparkleSmoothing: 0.05,
       
-      // Dead zone (ignore small movements)
+      // Dead Zone (ignore small movements)
       deadZone: 0.025,
-      
-      // Movement direction multipliers
-      cardDirectionX: 1,
-      cardDirectionY: -1,
-      
-      gradientDirectionX: -1,
-      gradientDirectionY: -1,
-      
-      holoDirectionX: -0.6,
-      holoDirectionY: -0.6,
-      
-      sparkleDirectionX: 0.25,
-      sparkleDirectionY: 0.25,
-      
-      lightDirectionX: -1,
-      lightDirectionY: -1,
     };
 
     // ========================================
     // STATE
     // ========================================
     
-    // Calibration
     let centerGamma = 0;
     let centerBeta = 0;
     
-    // Target values from sensor
     let targetX = 0;
     let targetY = 0;
     
-    // Smoothed values for different layers
-    let cardX = 0;
-    let cardY = 0;
+    // Smoothed values
+    let currentX = 0;
+    let currentY = 0;
     let foilX = 0;
     let foilY = 0;
     let sparkX = 0;
     let sparkY = 0;
     
-    // Motion state
     let isMotionActive = false;
     let isRecalibrated = false;
     let isImageLoaded = false;
     
-    // Preset rotation
     const presets = ['rainbow', 'gold', 'silver', 'galaxy', 'aurora', 'default'];
-    let currentPresetIndex = 5; // 'default' (cyan/magenta)
+    let currentPresetIndex = 5;
     
-    // DOM elements
+    // DOM
     let card, cardImage, statusEl, instructionsEl;
     let uploadBtn, motionBtn, recalibrateBtn, presetBtn;
-    let debugEl, dGamma, dBeta, dTarget, dCurrent, dIntensity;
+    let debugEl, dX, dY, dRx, dRy, dIntensity;
 
     // ========================================
     // UTILITIES
@@ -721,13 +636,6 @@
       return Math.min(Math.max(value, min), max);
     }
     
-    function lerp(start, end, factor) {
-      return start + (end - start) * factor;
-    }
-    
-    /**
-     * Apply dead zone to ignore small movements
-     */
     function applyDeadZone(value, zone = SETTINGS.deadZone) {
       if (Math.abs(value) < zone) return 0;
       const sign = value > 0 ? 1 : -1;
@@ -735,25 +643,14 @@
       return sign * clamp(adjusted, 0, 1);
     }
     
-    /**
-     * Smooth step for highlight calculation
-     */
     function smoothstep(edge0, edge1, x) {
       const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
       return t * t * (3 - 2 * t);
     }
     
-    /**
-     * Calculate highlight intensity based on diagonal position
-     */
     function calculateIntensity(x, y) {
-      // Combine X and Y into diagonal value
       const diagonal = x * 0.7 + y * 0.3;
-      
-      // Create flash effect at certain angles
       const highlight = smoothstep(-0.8, -0.2, diagonal) * (1 - smoothstep(0.2, 0.8, diagonal));
-      
-      // Base intensity + highlight boost
       return 0.3 + highlight * 0.7;
     }
 
@@ -762,7 +659,6 @@
     // ========================================
     
     function init() {
-      // Cache DOM
       card = document.getElementById('card');
       cardImage = document.getElementById('card-image');
       statusEl = document.getElementById('status');
@@ -773,20 +669,23 @@
       presetBtn = document.getElementById('preset-btn');
       
       debugEl = document.getElementById('debug');
-      dGamma = document.getElementById('d-gamma');
-      dBeta = document.getElementById('d-beta');
-      dTarget = document.getElementById('d-target');
-      dCurrent = document.getElementById('d-current');
+      dX = document.getElementById('d-x');
+      dY = document.getElementById('d-y');
+      dRx = document.getElementById('d-rx');
+      dRy = document.getElementById('d-ry');
       dIntensity = document.getElementById('d-intensity');
       
-      // Event listeners
+      // Set perspective on stage
+      document.querySelector('.card-stage').style.perspective = `${SETTINGS.perspective}px`;
+      
+      // Events
       document.getElementById('file-input').addEventListener('change', handleFileSelect);
       uploadBtn.addEventListener('click', () => document.getElementById('file-input').click());
       motionBtn.addEventListener('click', handleMotionButton);
       recalibrateBtn.addEventListener('click', resetCenter);
       presetBtn.addEventListener('click', cyclePreset);
       
-      // Mouse fallback
+      // Pointer tracking
       document.addEventListener('pointermove', handlePointerMove);
       
       // Start animation
@@ -798,10 +697,9 @@
         loadImage(savedImage);
       }
       
-      // Initial state - remove motion-active until activated
       card.classList.remove('motion-active');
       
-      console.log('Holographic Card Viewer initialized');
+      console.log('Initialized - Card will rotate based on pointer/orientation');
     }
 
     // ========================================
@@ -814,9 +712,8 @@
       
       const reader = new FileReader();
       reader.onload = (event) => {
-        const dataUrl = event.target.result;
-        loadImage(dataUrl);
-        localStorage.setItem('hologram-card-image', dataUrl);
+        loadImage(event.target.result);
+        localStorage.setItem('hologram-card-image', event.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -828,11 +725,9 @@
       statusEl.textContent = '모션 활성';
       statusEl.classList.add('active');
       
-      // Auto-start motion on mobile
       if (isMobileDevice() && typeof DeviceOrientationEvent !== 'undefined') {
         requestMotionPermission();
       } else {
-        // Desktop - start mouse tracking
         startMotion();
       }
     }
@@ -860,11 +755,11 @@
           startMotion();
         } else {
           statusEl.textContent = '권한 거부됨';
-          alert('모션 센서 권한이 필요합니다.\n설정에서 허용해주세요.');
+          alert('모션 센서 권한이 필요합니다.');
         }
       } catch (error) {
         console.error('Permission error:', error);
-        startMotion(); // Fallback to mouse
+        startMotion();
       }
     }
     
@@ -888,7 +783,6 @@
       const gamma = event.gamma || 0;
       const beta = event.beta || 0;
       
-      // Calibration on first reading
       if (!isRecalibrated) {
         centerGamma = gamma;
         centerBeta = beta;
@@ -896,15 +790,12 @@
         console.log(`Calibrated: gamma=${centerGamma.toFixed(1)}, beta=${centerBeta.toFixed(1)}`);
       }
       
-      // Calculate relative tilt
       const relGamma = gamma - centerGamma;
       const relBeta = beta - centerBeta;
       
-      // Update targets with dead zone
       targetX = applyDeadZone(relGamma / SETTINGS.sensorRange);
       targetY = applyDeadZone(relBeta / SETTINGS.sensorRange);
       
-      // Clamp
       targetX = clamp(targetX, -1, 1);
       targetY = clamp(targetY, -1, 1);
       
@@ -916,14 +807,10 @@
         isRecalibrated = true;
       }
       
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
+      // Normalized coordinates: -1 to 1
+      const x = ((event.clientX / window.innerWidth) - 0.5) * 2;
+      const y = ((event.clientY / window.innerHeight) - 0.5) * 2;
       
-      // Calculate normalized position (-1 to 1)
-      let x = (event.clientX - centerX) / centerX;
-      let y = (centerY - event.clientY) / centerY;
-      
-      // Apply dead zone
       targetX = applyDeadZone(x);
       targetY = applyDeadZone(y);
       
@@ -932,10 +819,8 @@
     
     function updateDebug(gamma, beta) {
       if (debugEl.style.display !== 'none') {
-        dGamma.textContent = gamma.toFixed(1);
-        dBeta.textContent = beta.toFixed(1);
-        dTarget.textContent = `${targetX.toFixed(2)}, ${targetY.toFixed(2)}`;
-        dCurrent.textContent = `${cardX.toFixed(2)}, ${cardY.toFixed(2)}`;
+        dX.textContent = targetX.toFixed(2);
+        dY.textContent = targetY.toFixed(2);
       }
     }
     
@@ -975,21 +860,16 @@
     // ========================================
     
     function animate() {
-      // Smooth interpolation with different speeds per layer
+      // Smooth interpolation with different speeds
+      currentX += (targetX - currentX) * SETTINGS.cardSmoothing;
+      currentY += (targetY - currentY) * SETTINGS.cardSmoothing;
       
-      // Card movement (slowest)
-      cardX += (targetX - cardX) * SETTINGS.cardSmoothing;
-      cardY += (targetY - cardY) * SETTINGS.cardSmoothing;
-      
-      // Foil/gradient movement (medium)
       foilX += (targetX - foilX) * SETTINGS.foilSmoothing;
       foilY += (targetY - foilY) * SETTINGS.foilSmoothing;
       
-      // Sparkle movement (slowest - behind everything)
       sparkX += (targetX - sparkX) * SETTINGS.sparkleSmoothing;
       sparkY += (targetY - sparkY) * SETTINGS.sparkleSmoothing;
       
-      // Update
       updateCard();
       updateHologram();
       updateDebugDisplay();
@@ -1000,41 +880,47 @@
     function updateCard() {
       const root = document.documentElement;
       
-      // Card rotation
-      const rx = cardY * SETTINGS.cardDirectionY * SETTINGS.cardRotateX;
-      const ry = cardX * SETTINGS.cardDirectionX * SETTINGS.cardRotateY;
+      // Card 3D Rotation
+      const rotateY = currentX * SETTINGS.maxRotateY;
+      const rotateX = currentY * -SETTINGS.maxRotateX;
       
-      // Card translation
-      const tx = cardX * SETTINGS.cardTranslate;
-      const ty = cardY * SETTINGS.cardTranslate;
+      // Subtle scale based on movement magnitude
+      let scale = 1;
+      if (SETTINGS.enableScale) {
+        const magnitude = Math.sqrt(currentX * currentX + currentY * currentY);
+        scale = 1 + magnitude * (SETTINGS.maxScale - 1);
+      }
       
-      root.style.setProperty('--card-rx', `${rx}deg`);
-      root.style.setProperty('--card-ry', `${ry}deg`);
-      root.style.setProperty('--card-x', `${tx}px`);
-      root.style.setProperty('--card-y', `${ty}px`);
+      root.style.setProperty('--rotate-x', `${rotateX}deg`);
+      root.style.setProperty('--rotate-y', `${rotateY}deg`);
+      root.style.setProperty('--card-scale', scale.toFixed(3));
       
-      // Edge glow intensity
-      const tiltAmount = Math.sqrt(cardX * cardX + cardY * cardY);
-      root.style.setProperty('--edge-glow', tiltAmount.toFixed(2));
+      // Debug
+      if (debugEl.style.display !== 'none') {
+        dRx.textContent = `${rotateX.toFixed(1)}deg`;
+        dRy.textContent = `${rotateY.toFixed(1)}deg`;
+      }
     }
     
     function updateHologram() {
       const root = document.documentElement;
       
-      // Calculate positions with different multipliers and directions
-      const gradientX = 50 + foilX * SETTINGS.gradientDirectionX * SETTINGS.gradientTravel;
-      const gradientY = 50 + foilY * SETTINGS.gradientDirectionY * SETTINGS.gradientTravel;
+      // Gradient position (opposite to card direction)
+      const gradientX = 50 + foilX * SETTINGS.gradientDirX * SETTINGS.gradientTravel;
+      const gradientY = 50 + foilY * SETTINGS.gradientDirY * SETTINGS.gradientTravel;
       
-      const holoX = 50 + foilX * SETTINGS.holoDirectionX * SETTINGS.holoTravel;
-      const holoY = 50 + foilY * SETTINGS.holoDirectionY * SETTINGS.holoTravel;
+      // Hologram texture position
+      const holoX = 50 + foilX * SETTINGS.holoDirX * SETTINGS.holoTravel;
+      const holoY = 50 + foilY * SETTINGS.holoDirY * SETTINGS.holoTravel;
       
-      const sparkleX = 50 + sparkX * SETTINGS.sparkleDirectionX * SETTINGS.sparkleTravel;
-      const sparkleY = 50 + sparkY * SETTINGS.sparkleDirectionY * SETTINGS.sparkleTravel;
+      // Sparkle position (same direction as pointer)
+      const sparkleX = 50 + sparkX * SETTINGS.sparkleDirX * SETTINGS.sparkleTravel;
+      const sparkleY = 50 + sparkY * SETTINGS.sparkleDirY * SETTINGS.sparkleTravel;
       
-      const lightX = 50 + foilX * SETTINGS.lightDirectionX * SETTINGS.lightTravel;
-      const lightY = 50 + foilY * SETTINGS.lightDirectionY * SETTINGS.lightTravel;
+      // Light/specular position (opposite to card direction)
+      const lightX = 50 + foilX * SETTINGS.lightDirX * SETTINGS.lightTravel;
+      const lightY = 50 + foilY * SETTINGS.lightDirY * SETTINGS.lightTravel;
       
-      // Apply positions
       root.style.setProperty('--gradient-x', `${gradientX}%`);
       root.style.setProperty('--gradient-y', `${gradientY}%`);
       root.style.setProperty('--holo-x', `${holoX}%`);
@@ -1044,26 +930,16 @@
       root.style.setProperty('--light-x', `${lightX}%`);
       root.style.setProperty('--light-y', `${lightY}%`);
       
-      // Calculate intensity based on position
+      // Intensity-based effects
       const intensity = calculateIntensity(foilX, foilY);
       
-      // Apply intensity-based effects
-      const foilOpacity = 0.25 + intensity * 0.45;
-      const foilBrightness = 0.75 + intensity * 0.45;
-      const foilContrast = 0.9 + intensity * 0.4;
+      root.style.setProperty('--foil-opacity', (0.25 + intensity * 0.45).toFixed(2));
+      root.style.setProperty('--foil-brightness', (0.75 + intensity * 0.45).toFixed(2));
+      root.style.setProperty('--foil-contrast', (0.9 + intensity * 0.4).toFixed(2));
+      root.style.setProperty('--sparkle-opacity', (0.08 + intensity * 0.4).toFixed(2));
+      root.style.setProperty('--specular-intensity', (0.2 + intensity * 0.75).toFixed(2));
+      root.style.setProperty('--glare-opacity', (0.15 + intensity * 0.45).toFixed(2));
       
-      const sparkleOpacity = 0.08 + intensity * 0.4;
-      const specularIntensity = 0.2 + intensity * 0.75;
-      const glareOpacity = 0.15 + intensity * 0.45;
-      
-      root.style.setProperty('--foil-opacity', foilOpacity.toFixed(2));
-      root.style.setProperty('--foil-brightness', foilBrightness.toFixed(2));
-      root.style.setProperty('--foil-contrast', foilContrast.toFixed(2));
-      root.style.setProperty('--sparkle-opacity', sparkleOpacity.toFixed(2));
-      root.style.setProperty('--specular-intensity', specularIntensity.toFixed(2));
-      root.style.setProperty('--glare-opacity', glareOpacity.toFixed(2));
-      
-      // Update debug
       if (debugEl.style.display !== 'none') {
         dIntensity.textContent = intensity.toFixed(2);
       }
@@ -1071,7 +947,8 @@
     
     function updateDebugDisplay() {
       if (debugEl.style.display !== 'none') {
-        dCurrent.textContent = `${cardX.toFixed(2)}, ${cardY.toFixed(2)}`;
+        dX.textContent = currentX.toFixed(2);
+        dY.textContent = currentY.toFixed(2);
       }
     }
 
