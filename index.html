@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Holographic Card Viewer</title>
+  <style>
+    /* ========================================
+       BASE STYLES
+       ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Card color presets */
+      --color1: rgb(0, 231, 255);
+      --color2: rgb(255, 0, 231);
+      
+      /* Dynamic position variables (controlled by JS) */
+      --pos-x: 50%;
+      --pos-y: 50%;
+      
+      /* Per-layer movement multipliers */
+      --gradient-x: 50%;
+      --gradient-y: 50%;
+      --holo-x: 50%;
+      --holo-y: 50%;
+      --sparkle-x: 50%;
+      --sparkle-y: 50%;
+      --light-x: 50%;
+      --light-y: 50%;
+      
+      /* Intensity variables */
+      --holo-opacity: 0.5;
+      --holo-brightness: 1;
+      --holo-contrast: 1;
+      --sparkle-opacity: 0.75;
+      --specular-intensity: 0.6;
+      
+      /* Card dimensions */
+      --card-width: min(75vw, 280px);
+      --card-height: calc(var(--card-width) * 1.4);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ========================================
+       MAIN CONTAINER
+       ======================================== */
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* ========================================
+       CARD CONTAINER
+       ======================================== */
+    .card {
+      width: var(--card-width);
+      height: var(--card-height);
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.4),
+        0 16px 32px rgba(0, 0, 0, 0.5),
+        0 24px 48px rgba(0, 0, 0, 0.6);
+      background: #1a1a1a;
+      
+      /* CRITICAL: Card itself NEVER moves */
+      transform: none !important;
+      perspective: none !important;
+    }
+
+    /* ========================================
+       CARD IMAGE LAYER
+       ======================================== */
+    .card-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+      z-index: 1;
+    }
+
+    /* ========================================
+       HOLO: BEFORE LAYER
+       Main holographic gradient band
+       Simulates the main foil reflection band
+       ======================================== */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      z-index: 10;
+      pointer-events: none;
+      
+      /* Large gradient band that sweeps across */
+      background-image:
+        linear-gradient(
+          115deg,
+          transparent 0%,
+          transparent 25%,
+          var(--color1) 48%,
+          var(--color2) 52%,
+          transparent 75%,
+          transparent 100%
+        );
+      
+      /* Large background size for sweeping movement */
+      background-size: 300% 300%;
+      background-position: var(--gradient-x) var(--gradient-y);
+      
+      /* Blend modes for realistic foil effect */
+      mix-blend-mode: color-dodge;
+      
+      /* Intensity settings */
+      opacity: var(--holo-opacity);
+      filter: 
+        brightness(var(--holo-brightness))
+        contrast(var(--holo-contrast));
+    }
+
+    /* ========================================
+       HOLO: AFTER LAYER
+       Multi-layer texture composition:
+       - sparkles (animated dots/glints)
+       - holo diffraction texture
+       - rainbow gradient
+       ======================================== */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      z-index: 11;
+      pointer-events: none;
+      
+      /* Multiple background layers stacked */
+      background-image:
+        /* Sparkle dots pattern (CSS-generated) */
+        radial-gradient(
+          circle at 20% 30%,
+          rgba(255, 255, 255, 0.8) 0%,
+          rgba(255, 255, 255, 0.4) 1px,
+          transparent 2px
+        ),
+        radial-gradient(
+          circle at 80% 20%,
+          rgba(255, 255, 255, 0.6) 0%,
+          rgba(255, 255, 255, 0.3) 1px,
+          transparent 2px
+        ),
+        radial-gradient(
+          circle at 40% 70%,
+          rgba(255, 255, 255, 0.7) 0%,
+          rgba(255, 255, 255, 0.35) 1px,
+          transparent 2px
+        ),
+        radial-gradient(
+          circle at 70% 80%,
+          rgba(255, 255, 255, 0.5) 0%,
+          rgba(255, 255, 255, 0.25) 1px,
+          transparent 2px
+        ),
+        radial-gradient(
+          circle at 50% 50%,
+          rgba(255, 255, 255, 0.9) 0%,
+          rgba(255, 255, 255, 0.5) 1px,
+          transparent 3px
+        ),
+        /* Holographic diffraction texture pattern */
+        repeating-linear-gradient(
+          45deg,
+          transparent 0px,
+          transparent 2px,
+          rgba(255, 255, 255, 0.03) 2px,
+          rgba(255, 255, 255, 0.03) 4px
+        ),
+        repeating-linear-gradient(
+          -45deg,
+          transparent 0px,
+          transparent 2px,
+          rgba(255, 255, 255, 0.02) 2px,
+          rgba(255, 255, 255, 0.02) 4px
+        ),
+        /* Rainbow gradient overlay */
+        linear-gradient(
+          125deg,
+          rgba(255, 0, 80, 0.4) 15%,
+          rgba(252, 164, 0, 0.3) 30%,
+          rgba(255, 255, 0, 0.25) 40%,
+          rgba(0, 255, 138, 0.2) 60%,
+          rgba(0, 207, 255, 0.3) 70%,
+          rgba(204, 76, 250, 0.4) 85%
+        );
+      
+      /* Background size and position */
+      background-size: 
+        120% 120%,
+        120% 120%,
+        120% 120%,
+        120% 120%,
+        100% 100%,
+        150% 150%,
+        150% 150%,
+        200% 200%;
+      background-position: 
+        var(--sparkle-x) var(--sparkle-y),
+        var(--sparkle-x) var(--sparkle-y),
+        var(--sparkle-x) var(--sparkle-y),
+        var(--sparkle-x) var(--sparkle-y),
+        var(--sparkle-x) var(--sparkle-y),
+        var(--holo-x) var(--holo-y),
+        var(--holo-x) var(--holo-y),
+        var(--gradient-x) var(--gradient-y);
+      
+      /* Blend modes */
+      background-blend-mode: overlay;
+      mix-blend-mode: color-dodge;
+      
+      /* Intensity */
+      opacity: var(--sparkle-opacity);
+    }
+
+    /* ========================================
+       SPECULAR HIGHLIGHT LAYER
+       Bright white reflection spot
+       ======================================== */
+    .holo-specular {
+      position: absolute;
+      inset: -30%;
+      z-index: 12;
+      pointer-events: none;
+      opacity: var(--specular-intensity);
+      mix-blend-mode: screen;
+      background: radial-gradient(
+        circle at var(--light-x) var(--light-y),
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.6) 8%,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0.05) 35%,
+        transparent 55%
+      );
+    }
+
+    /* ========================================
+       GLARE BAND LAYER
+       Diagonal white reflection stripe
+       ======================================== */
+    .holo-glare {
+      position: absolute;
+      inset: -50%;
+      z-index: 13;
+      pointer-events: none;
+      opacity: 0.3;
+      mix-blend-mode: color-dodge;
+      background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 20%,
+        rgba(255, 255, 255, 0.15) 35%,
+        rgba(255, 255, 255, 0.5) 45%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0.5) 55%,
+        rgba(255, 255, 255, 0.15) 65%,
+        transparent 80%,
+        transparent 100%
+      );
+      background-size: 300% 300%;
+      background-position: var(--light-x) var(--light-y);
+    }
+
+    /* ========================================
+       INACTIVE STATE
+       When motion is not active, reduce holo effect
+       ======================================== */
+    .card:not(.motion-active)::before {
+      opacity: 0.15;
+      background-position: 50% 50%;
+      filter: brightness(0.8) contrast(0.9);
+    }
+
+    .card:not(.motion-active)::after {
+      opacity: 0.2;
+      background-position: 
+        50% 50%,
+        50% 50%,
+        50% 50%,
+        50% 50%,
+        50% 50%,
+        50% 50%,
+        50% 50%,
+        50% 50%;
+    }
+
+    .card:not(.motion-active) .holo-specular {
+      opacity: 0.1;
+    }
+
+    .card:not(.motion-active) .holo-glare {
+      opacity: 0.05;
+    }
+
+    /* ========================================
+       UI CONTROLS
+       ======================================== */
+    .controls {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      min-width: 160px;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: rgba(100, 200, 255, 0.2);
+      border-color: rgba(100, 200, 255, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: rgba(100, 200, 255, 0.3);
+      border-color: rgba(100, 200, 255, 0.5);
+    }
+
+    .btn-secondary {
+      font-size: 12px;
+      padding: 10px 20px;
+      min-width: 120px;
+      opacity: 0.7;
+    }
+
+    /* Hidden file input */
+    #file-input {
+      display: none;
+    }
+
+    /* ========================================
+       DEBUG INFO (development only)
+       ======================================== */
+    .debug-info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 10px;
+      font-family: monospace;
+      color: rgba(255, 255, 255, 0.5);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      line-height: 1.4;
+      z-index: 1000;
+    }
+
+    /* ========================================
+       INSTRUCTIONS
+       ======================================== */
+    .instructions {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .instructions.hidden {
+      opacity: 0;
+    }
+
+    .instructions svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .instructions p {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    /* ========================================
+       STATUS INDICATOR
+       ======================================== */
+    .status {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status.active {
+      color: rgba(100, 200, 255, 0.8);
+    }
+
+    /* ========================================
+       COLOR PRESETS (for future expansion)
+       ======================================== */
+    .card[data-preset="rainbow"] {
+      --color1: rgb(255, 0, 80);
+      --color2: rgb(204, 76, 250);
+    }
+
+    .card[data-preset="gold"] {
+      --color1: rgb(255, 215, 0);
+      --color2: rgb(255, 165, 0);
+    }
+
+    .card[data-preset="silver"] {
+      --color1: rgb(192, 192, 192);
+      --color2: rgb(128, 128, 128);
+    }
+
+    .card[data-preset="galaxy"] {
+      --color1: rgb(138, 43, 226);
+      --color2: rgb(75, 0, 130);
+    }
+
+    .card[data-preset="aurora"] {
+      --color1: rgb(0, 255, 127);
+      --color2: rgb(0, 191, 255);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Status indicator -->
+    <div class="status" id="status">카드 업로드 필요</div>
+
+    <!-- Instructions (shown when no card) -->
+    <div class="instructions" id="instructions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      <div>카드 이미지를 업로드해주세요</div>
+      <p>포켓몬, 스포츠, 포토카드 등</p>
+    </div>
+
+    <!-- Card container -->
+    <div class="card motion-active" id="card">
+      <img class="card-image" id="card-image" alt="Card">
+      
+      <!-- Specular and glare layers -->
+      <div class="holo-specular"></div>
+      <div class="holo-glare"></div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="file-input" accept="image/*">
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn" id="upload-btn">카드 변경</button>
+      <button class="btn btn-primary" id="motion-btn">모션 효과 시작</button>
+      <button class="btn btn-secondary" id="recalibrate-btn" style="display: none;">재보정</button>
+    </div>
+
+    <!-- Debug info (hidden by default) -->
+    <div class="debug-info" id="debug" style="display: none;">
+      gamma: <span id="debug-gamma">0</span><br>
+      beta: <span id="debug-beta">0</span><br>
+      targetX: <span id="debug-tx">0</span><br>
+      targetY: <span id="debug-ty">0</span><br>
+      currentX: <span id="debug-cx">0</span><br>
+      currentY: <span id="debug-cy">0</span><br>
+      intensity: <span id="debug-intensity">0</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ========================================
+     * HOLOGRAPHIC CARD VIEWER
+     * ========================================
+     * 
+     * Based on original CodePen holofoil card effect:
+     * https://codepen.io/simeydotme/pen/PrQKgo
+     * 
+     * KEY DIFFERENCE FROM ORIGINAL:
+     * - The card itself NEVER moves (no transform: rotateX/Y/Z)
+     * - Only hologram overlay layers move based on DeviceOrientation
+     * - Multiple layers with different parallax speeds create depth
+     */
+
+    // ========================================
+    // STATE VARIABLES
+    // ========================================
+    
+    // Calibration center values
+    let centerGamma = 0;
+    let centerBeta = 0;
+    
+    // Raw sensor target values (-1 to 1)
+    let targetX = 0;
+    let targetY = 0;
+    
+    // Smoothed current values for animation
+    let currentX = 0;
+    let currentY = 0;
+    
+    // Smoothing factor
+    const SMOOTHING = 0.08;
+    
+    // Maximum tilt angle for full range
+    const MAX_TILT = 25;
+    
+    // Motion state
+    let isMotionActive = false;
+    let isRecalibrated = false;
+    
+    // DOM Elements
+    let card, cardImage, debugEl;
+    let debugGamma, debugBeta, debugTx, debugTy, debugCx, debugCy, debugIntensity;
+    let statusEl, instructionsEl, uploadBtn, motionBtn, recalibrateBtn;
+    
+    // Animation frame ID
+    let animationFrameId = null;
+    
+    // ========================================
+    // UTILITY FUNCTIONS
+    // ========================================
+    
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+    
+    function lerp(start, end, factor) {
+      return start + (end - start) * factor;
+    }
+
+    // ========================================
+    // INITIALIZATION
+    // ========================================
+    
+    function init() {
+      // Cache DOM elements
+      card = document.getElementById('card');
+      cardImage = document.getElementById('card-image');
+      statusEl = document.getElementById('status');
+      instructionsEl = document.getElementById('instructions');
+      uploadBtn = document.getElementById('upload-btn');
+      motionBtn = document.getElementById('motion-btn');
+      recalibrateBtn = document.getElementById('recalibrate-btn');
+      
+      debugEl = document.getElementById('debug');
+      debugGamma = document.getElementById('debug-gamma');
+      debugBeta = document.getElementById('debug-beta');
+      debugTx = document.getElementById('debug-tx');
+      debugTy = document.getElementById('debug-ty');
+      debugCx = document.getElementById('debug-cx');
+      debugCy = document.getElementById('debug-cy');
+      debugIntensity = document.getElementById('debug-intensity');
+      
+      // Event handlers
+      document.getElementById('file-input').addEventListener('change', handleFileSelect);
+      uploadBtn.addEventListener('click', () => document.getElementById('file-input').click());
+      motionBtn.addEventListener('click', handleMotionButton);
+      recalibrateBtn.addEventListener('click', resetCenter);
+      
+      // Mouse fallback for desktop
+      document.addEventListener('pointermove', handlePointerMove);
+      
+      // Start animation loop
+      animate();
+      
+      // Check for saved image
+      const savedImage = localStorage.getItem('hologram-card-image');
+      if (savedImage) {
+        loadImage(savedImage);
+      }
+      
+      // Remove motion-active class initially
+      card.classList.remove('motion-active');
+      
+      console.log('Holographic Card Viewer initialized');
+    }
+    
+    // ========================================
+    // FILE HANDLING
+    // ========================================
+    
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        loadImage(dataUrl);
+        localStorage.setItem('hologram-card-image', dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function loadImage(src) {
+      cardImage.src = src;
+      instructionsEl.classList.add('hidden');
+      statusEl.textContent = '모션을 활성화해주세요';
+      statusEl.classList.remove('active');
+      
+      // Remove motion-active until motion is started
+      card.classList.remove('motion-active');
+      
+      // Auto-start motion on mobile
+      if (isMobileDevice() && typeof DeviceOrientationEvent !== 'undefined') {
+        requestMotionPermission();
+      }
+    }
+    
+    // ========================================
+    // DEVICE MOTION HANDLING
+    // ========================================
+    
+    function handleMotionButton() {
+      if (isMobileDevice() && typeof DeviceOrientationEvent !== 'undefined') {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          requestMotionPermission();
+        } else {
+          startMotionTracking();
+        }
+      } else {
+        startMouseTracking();
+      }
+    }
+    
+    async function requestMotionPermission() {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission === 'granted') {
+          startMotionTracking();
+        } else {
+          statusEl.textContent = '모션 권한이 거부되었습니다';
+          alert('모션 센서 접근이 거부되었습니다.\n설정에서 권한을 허용해주세요.');
+        }
+      } catch (error) {
+        console.error('Motion permission error:', error);
+        startMouseTracking();
+      }
+    }
+    
+    function startMotionTracking() {
+      window.addEventListener('deviceorientation', handleOrientation, true);
+      isMotionActive = true;
+      
+      card.classList.add('motion-active');
+      statusEl.textContent = '모션 활성';
+      statusEl.classList.add('active');
+      motionBtn.textContent = '모션 활성됨';
+      motionBtn.disabled = true;
+      recalibrateBtn.style.display = 'block';
+      
+      console.log('Device orientation tracking started');
+    }
+    
+    function startMouseTracking() {
+      isMotionActive = true;
+      isRecalibrated = true;
+      
+      card.classList.add('motion-active');
+      statusEl.textContent = '마우스 모드';
+      statusEl.classList.add('active');
+      motionBtn.textContent = '마우스 모드';
+      motionBtn.disabled = true;
+      recalibrateBtn.style.display = 'block';
+      
+      console.log('Mouse tracking mode started');
+    }
+    
+    // ========================================
+    // SENSOR EVENT HANDLERS
+    // ========================================
+    
+    function handleOrientation(event) {
+      const gamma = event.gamma || 0;
+      const beta = event.beta || 0;
+      
+      // Set calibration on first reading
+      if (!isRecalibrated) {
+        centerGamma = gamma;
+        centerBeta = beta;
+        isRecalibrated = true;
+        console.log(`Calibrated: gamma=${centerGamma.toFixed(1)}, beta=${centerBeta.toFixed(1)}`);
+      }
+      
+      // Calculate relative tilt
+      const relativeGamma = gamma - centerGamma;
+      const relativeBeta = beta - centerBeta;
+      
+      // Update targets
+      // NOTE: Inverting X for more natural light reflection
+      targetX = clamp(relativeGamma / MAX_TILT, -1, 1);
+      targetY = clamp(relativeBeta / MAX_TILT, -1, 1);
+      
+      updateDebug(gamma, beta);
+    }
+    
+    function handlePointerMove(event) {
+      if (!isRecalibrated) {
+        isRecalibrated = true;
+      }
+      
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      // Invert X for natural reflection
+      targetX = clamp((centerX - event.clientX) / (centerX * 0.8), -1, 1);
+      targetY = clamp((event.clientY - centerY) / (centerY * 0.8), -1, 1);
+      
+      updateDebug(0, 0);
+    }
+    
+    function updateDebug(gamma, beta) {
+      if (debugEl.style.display !== 'none') {
+        debugGamma.textContent = gamma.toFixed(1);
+        debugBeta.textContent = beta.toFixed(1);
+        debugTx.textContent = targetX.toFixed(2);
+        debugTy.textContent = targetY.toFixed(2);
+      }
+    }
+    
+    // ========================================
+    // RECALIBRATION
+    // ========================================
+    
+    function resetCenter() {
+      if (!isMotionActive) return;
+      
+      isRecalibrated = false;
+      centerGamma = 0;
+      centerBeta = 0;
+      targetX = 0;
+      targetY = 0;
+      
+      console.log('Center recalibrated');
+      
+      statusEl.textContent = '재보정 완료';
+      setTimeout(() => {
+        statusEl.textContent = isMotionActive ? '모션 활성' : '마우스 모드';
+      }, 1000);
+    }
+    
+    // ========================================
+    // ANIMATION LOOP
+    // ========================================
+    
+    function animate() {
+      // Smooth interpolation
+      currentX += (targetX - currentX) * SMOOTHING;
+      currentY += (targetY - currentY) * SMOOTHING;
+      
+      // Update debug
+      if (debugEl.style.display !== 'none') {
+        debugCx.textContent = currentX.toFixed(2);
+        debugCy.textContent = currentY.toFixed(2);
+      }
+      
+      // Update hologram
+      updateHologram();
+      
+      animationFrameId = requestAnimationFrame(animate);
+    }
+    
+    // ========================================
+    // HOLOGRAM CSS UPDATE
+    // ========================================
+    
+    /**
+     * Calculate intensity based on tilt amount
+     * Creates "flash" effect at certain angles
+     */
+    function calculateIntensity(x, y) {
+      // Distance from center
+      const distance = Math.sqrt(x * x + y * y);
+      
+      // Normalize to 0-1
+      return clamp(distance * 1.2, 0, 1);
+    }
+    
+    function updateHologram() {
+      const intensity = calculateIntensity(currentX, currentY);
+      
+      // Update debug intensity
+      if (debugEl.style.display !== 'none') {
+        debugIntensity.textContent = intensity.toFixed(2);
+      }
+      
+      /**
+       * Per-layer position calculation
+       * Each layer moves at a different rate for parallax depth
+       */
+      
+      // Main gradient band (largest movement)
+      const gradientX = 50 + currentX * 70;
+      const gradientY = 50 + currentY * 70;
+      
+      // Holographic texture (medium movement)
+      const holoX = 50 + currentX * 45;
+      const holoY = 50 + currentY * 45;
+      
+      // Sparkle dots (smallest movement)
+      const sparkleX = 50 + currentX * 20;
+      const sparkleY = 50 + currentY * 20;
+      
+      // Specular/light (largest movement)
+      const lightX = 50 + currentX * 90;
+      const lightY = 50 + currentY * 90;
+      
+      // Update CSS custom properties
+      const root = document.documentElement;
+      
+      root.style.setProperty('--gradient-x', `${gradientX}%`);
+      root.style.setProperty('--gradient-y', `${gradientY}%`);
+      root.style.setProperty('--holo-x', `${holoX}%`);
+      root.style.setProperty('--holo-y', `${holoY}%`);
+      root.style.setProperty('--sparkle-x', `${sparkleX}%`);
+      root.style.setProperty('--sparkle-y', `${sparkleY}%`);
+      root.style.setProperty('--light-x', `${lightX}%`);
+      root.style.setProperty('--light-y', `${lightY}%`);
+      
+      /**
+       * Intensity-based effects
+       * As tilt increases, effects become stronger
+       */
+      
+      // Main gradient opacity and filters
+      const holoOpacity = 0.3 + intensity * 0.5;
+      const holoBrightness = 0.7 + intensity * 0.5;
+      const holoContrast = 0.8 + intensity * 0.5;
+      
+      root.style.setProperty('--holo-opacity', holoOpacity.toFixed(2));
+      root.style.setProperty('--holo-brightness', holoBrightness.toFixed(2));
+      root.style.setProperty('--holo-contrast', holoContrast.toFixed(2));
+      
+      // Sparkle intensity
+      const sparkleOpacity = 0.4 + intensity * 0.6;
+      root.style.setProperty('--sparkle-opacity', sparkleOpacity.toFixed(2));
+      
+      // Specular highlight
+      const specularIntensity = 0.2 + intensity * 0.7;
+      root.style.setProperty('--specular-intensity', specularIntensity.toFixed(2));
+    }
+    
+    // ========================================
+    // DEVICE DETECTION
+    // ========================================
+    
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // ========================================
+    // DEBUG TOGGLE (tap card 5 times)
+    // ========================================
+    
+    let tapCount = 0;
+    let tapTimer = null;
+    
+    card?.addEventListener('click', () => {
+      tapCount++;
+      clearTimeout(tapTimer);
+      
+      if (tapCount >= 5) {
+        debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+        tapCount = 0;
+      } else {
+        tapTimer = setTimeout(() => tapCount = 0, 1000);
+      }
+    });
+    
+    // ========================================
+    // CLEANUP
+    // ========================================
+    
+    window.addEventListener('beforeunload', () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    });
+    
+    // ========================================
+    // START
+    // ========================================
+    
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
